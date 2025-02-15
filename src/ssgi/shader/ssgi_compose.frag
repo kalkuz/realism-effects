@@ -24,12 +24,13 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   }
 
   float depth = textureLod(depthTexture, uv, 0.).r;
-  vec3 ssgiClr;
+  vec4 sceneColor = textureLod(sceneTexture, uv, 0.);
+  vec4 ssgiColor = textureLod(inputTexture, uv, 0.);
 
-  if (depth == 1.0) {
-    ssgiClr = textureLod(sceneTexture, uv, 0.).rgb;
+  if (depth == 1.0 || sceneColor.a < 0.99) {
+    outputColor = sceneColor;
   } else {
-    ssgiClr = textureLod(inputTexture, uv, 0.).rgb;
+    vec3 finalColor = ssgiColor.rgb;
 
 #ifdef USE_FOG
     float viewZ = getViewZ(depth) * 0.4; // todo: find why 0.4 is needed to somewhat match three.js's result
@@ -37,9 +38,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
 
 #include <fog_fragment>
 
-    ssgiClr = mix(ssgiClr, fogColor, fogFactor);
+    finalColor = mix(finalColor, fogColor, fogFactor);
 #endif
-  }
 
-  outputColor = vec4(ssgiClr, 1.0);
+    outputColor = vec4(finalColor, 1.0);
+  }
 }
