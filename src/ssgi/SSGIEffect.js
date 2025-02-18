@@ -67,6 +67,9 @@ export class SSGIEffect extends Effect {
 		this._camera = camera
 		this.composer = composer
 
+		// Add envMapIntensity to options with a default value of 1.0
+		options.envMapIntensity = options.envMapIntensity ?? 1.0
+
 		if (options.mode === "ssr") {
 			options.reprojectSpecular = true
 			options.neighborhoodClamp = true
@@ -99,6 +102,10 @@ export class SSGIEffect extends Effect {
 		}
 
 		this.ssgiPass = new SSGIPass(this, options)
+
+		// Add the envMapIntensity uniform to the SSGI pass
+		this.ssgiPass.fullscreenMaterial.uniforms.envMapIntensity = new Uniform(options.envMapIntensity)
+
 		this.denoiser = new Denoiser(scene, camera, this.ssgiPass.texture, {
 			gBufferPass: this.ssgiPass.gBufferPass,
 			velocityDepthNormalPass: options.velocityDepthNormalPass,
@@ -171,6 +178,14 @@ export class SSGIEffect extends Effect {
 					options[key] = value
 
 					switch (key) {
+						// Add case for envMapIntensity
+						case "envMapIntensity":
+							if (this.ssgiPass.fullscreenMaterial.uniforms.envMapIntensity) {
+								this.ssgiPass.fullscreenMaterial.uniforms.envMapIntensity.value = value
+								this.reset()
+							}
+							break
+
 						// denoiser
 						case "denoiseIterations":
 							if (this.denoiser.denoisePass) this.denoiser.denoisePass.iterations = value
@@ -205,7 +220,6 @@ export class SSGIEffect extends Effect {
 							this.ssgiPass.fullscreenMaterial.defines[key] = parseInt(value)
 							this.ssgiPass.fullscreenMaterial.needsUpdate = needsUpdate
 							this.reset()
-
 							break
 
 						case "importanceSampling":
@@ -247,7 +261,6 @@ export class SSGIEffect extends Effect {
 							}
 
 							this.uniforms.get("isDebug").value = this.outputTexture !== this.denoiser.texture
-
 							break
 
 						// must be a uniform

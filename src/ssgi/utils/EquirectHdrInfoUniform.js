@@ -1,6 +1,15 @@
 // source: https://github.com/gkjohnson/three-gpu-pathtracer/blob/main/src/uniforms/EquirectHdrInfoUniform.js
 
-import { DataTexture, FloatType, NearestFilter, RGBAFormat, RedFormat, RepeatWrapping, Vector2 } from "three"
+import {
+	DataTexture,
+	FloatType,
+	NearestFilter,
+	RGBAFormat,
+	RedFormat,
+	RepeatWrapping,
+	Vector2,
+	WebGLRenderTarget
+} from "three"
 
 const workerOnMessage = ({ data: { width, height, isFloatType, flipY, data } }) => {
 	// from: https://github.com/mrdoob/three.js/blob/dev/src/extras/DataUtils.js
@@ -322,6 +331,34 @@ export class EquirectHdrInfoUniform {
 
 	updateFrom(map) {
 		map = map.clone()
+		// Handle PMREM generated environments
+		if (map instanceof WebGLRenderTarget || !map.image || !map.image.data) {
+			// For PMREM environments, we'll use default uniform values
+			// since we can't access the actual pixel data
+			this.size.set(1, 1)
+			// Use default white texture with uniform importance sampling
+			const whiteTex = new DataTexture(new Float32Array([1, 1, 1, 1]), 1, 1)
+			whiteTex.type = FloatType
+			whiteTex.format = RGBAFormat
+			whiteTex.minFilter = NearestFilter
+			whiteTex.magFilter = NearestFilter
+			whiteTex.wrapS = RepeatWrapping
+			whiteTex.wrapT = RepeatWrapping
+			whiteTex.generateMipmaps = false
+			whiteTex.needsUpdate = true
+			this.map = whiteTex
+			// Set uniform sampling weights
+			const marginalData = new Float32Array([0, 1])
+			const conditionalData = new Float32Array([0, 0, 1, 1])
+			this.marginalWeights.image.data = marginalData
+			this.marginalWeights.needsUpdate = true
+			this.conditionalWeights.image.data = conditionalData
+			this.conditionalWeights.needsUpdate = true
+			this.totalSumWhole = 1
+			this.totalSumDecimal = 0
+			return Promise.resolve(whiteTex)
+		}
+
 		const { width, height, data } = map.image
 		const { type } = map
 

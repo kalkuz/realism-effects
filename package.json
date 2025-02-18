@@ -78,9 +78,5 @@
 	"version": "1.1.2",
 	"lint-staged": {
 		"*.{js,css,md}": "prettier --write"
-	},
-	"dependencies": {
-		"canvas": "^2.11.2",
-		"eruda": "^3.0.1"
 	}
 }

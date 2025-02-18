@@ -15,6 +15,7 @@ uniform float maxEnvMapMipLevel;
 uniform float rayDistance;
 uniform float thickness;
 uniform float envBlur;
+uniform float envMapIntensity;
 
 uniform vec2 resolution;
 
@@ -337,6 +338,9 @@ vec3 getEnvColor(vec3 l, vec3 worldPos, float roughness, bool isDiffuseSample, b
       envMapSample *= maxEnvLum / envLum;
     }
   }
+
+  // Apply environment map intensity
+  envMapSample *= envMapIntensity;
 
   return envMapSample;
 #else
